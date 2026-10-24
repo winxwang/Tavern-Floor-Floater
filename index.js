@@ -5,6 +5,7 @@
   const state = { messages: [], current: null, minimized: false, dragging: false, filter: 'all' };
   const positionKey = 'tavern-floor-floater-position-v1';
   let refreshQueued = false;
+  let refreshTimer = null;
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(positionKey) || '{}'); } catch {}
 
@@ -14,11 +15,11 @@
   panel.innerHTML = [
     '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-count">—/0</span><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
-    '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层号 / 内容…" aria-label="搜索楼层或消息内容"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
-    '<div class="tff-filter-row" role="group" aria-label="选择文本预览类型"><button class="tff-filter is-active" data-filter="all" type="button">全部预览</button><button class="tff-filter" data-filter="user" type="button">用户文本</button><button class="tff-filter" data-filter="assistant" type="button">AI文本</button></div>',
-    '<div class="tff-row"><button class="tff-icon tff-prev" type="button" title="上一条系统消息">↑</button><input class="tff-number" type="number" step="1" value="0" aria-label="酒馆系统楼层编号"><button class="tff-go" type="button">跳转</button><button class="tff-icon tff-next" type="button" title="下一条系统消息">↓</button></div>',
+    '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
+    '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
+    '<div class="tff-row"><button class="tff-icon tff-prev" type="button" title="上一条消息">↑</button><input class="tff-number" type="number" step="1" value="0" aria-label="酒馆系统楼层编号"><button class="tff-go" type="button">跳转</button><button class="tff-icon tff-next" type="button" title="下一条消息">↓</button></div>',
     '<div class="tff-row tff-secondary"><button class="tff-first" type="button">最早消息</button><button class="tff-latest" type="button">最新 AI 回复 ↓</button></div>',
-    '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">编号读取消息元素的 mesid 系统编号；点击后定位到消息首行</div></div>'
+    '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">为避免长文本卡顿，列表仅显示系统编号和角色，不读取消息正文</div></div>'
   ].join('');
   document.body.appendChild(panel);
   if (Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
@@ -29,21 +30,6 @@
   const $ = s => panel.querySelector(s);
   const input = $('.tff-number'), search = $('.tff-search'), count = $('.tff-count'), results = $('.tff-results');
 
-  function getMessages() {
-    return Array.from(document.querySelectorAll('#chat .mes'))
-      .filter(el => el.isConnected && el.getClientRects().length > 0)
-      .map((el, index) => {
-        const rawId = el.getAttribute('mesid') ?? el.dataset.mesid;
-        const parsedId = rawId !== null && rawId !== '' ? Number(rawId) : NaN;
-        return {
-          el,
-          floor: Number.isFinite(parsedId) ? parsedId : index,
-          role: roleOf(el),
-          text: textOf(el)
-        };
-      })
-      .sort((a, b) => a.floor - b.floor);
-  }
   function roleOf(el) {
     const role = (el.getAttribute('data-is_user') || '').toLowerCase();
     if (role === 'true') return 'user';
@@ -55,9 +41,15 @@
     if (alt.includes('user') || alt.includes('用户')) return 'user';
     return 'assistant';
   }
-  function textOf(el) {
-    const body = el.querySelector('.mes_text, .mesText, .message_text');
-    return ((body || el).innerText || '').replace(/\s+/g, ' ').trim();
+  function getMessages() {
+    return Array.from(document.querySelectorAll('#chat .mes'))
+      .filter(el => el.isConnected && el.getClientRects().length > 0)
+      .map((el, index) => {
+        const rawId = el.getAttribute('mesid') ?? el.dataset.mesid;
+        const parsedId = rawId !== null && rawId !== '' ? Number(rawId) : NaN;
+        return { el, floor: Number.isFinite(parsedId) ? parsedId : index, role: roleOf(el) };
+      })
+      .sort((a, b) => a.floor - b.floor);
   }
   function roleLabel(role) { return role === 'user' ? '用户' : role === 'system' ? '系统' : 'AI'; }
   function roleIcon(role) { return role === 'user' ? '我' : role === 'system' ? '系' : 'AI'; }
@@ -70,13 +62,10 @@
   }
   function filteredMessages() {
     const query = search.value.trim().toLocaleLowerCase();
-    return state.messages.filter(item => {
-      if (state.filter !== 'all' && item.role !== state.filter) return false;
-      if (!query) return true;
-      return String(item.floor).includes(query) ||
-        roleLabel(item.role).toLocaleLowerCase().includes(query) ||
-        item.text.toLocaleLowerCase().includes(query);
-    });
+    return state.messages.filter(item =>
+      (state.filter === 'all' || item.role === state.filter) &&
+      (!query || String(item.floor).includes(query) || roleLabel(item.role).toLocaleLowerCase().includes(query))
+    );
   }
   function renderResults() {
     const matches = filteredMessages();
@@ -95,12 +84,15 @@
       button.className = 'tff-result' + (item.floor === state.current ? ' is-current' : '');
       button.title = '跳转到酒馆系统编号 ' + item.floor;
       const role = document.createElement('span');
-      role.className = 'tff-role tff-role-' + item.role; role.textContent = roleIcon(item.role);
+      role.className = 'tff-role tff-role-' + item.role;
+      role.textContent = roleIcon(item.role);
       const floor = document.createElement('span');
-      floor.className = 'tff-result-floor'; floor.textContent = String(item.floor);
-      const snippet = document.createElement('span');
-      snippet.className = 'tff-snippet'; snippet.textContent = item.text || '（无文本内容）';
-      button.append(role, floor, snippet);
+      floor.className = 'tff-result-floor';
+      floor.textContent = String(item.floor);
+      const label = document.createElement('span');
+      label.className = 'tff-snippet';
+      label.textContent = roleLabel(item.role) + '消息';
+      button.append(role, floor, label);
       button.addEventListener('click', () => jumpTo(item.floor));
       fragment.appendChild(button);
     }
@@ -122,6 +114,10 @@
     renderResults();
   }
   function refresh() { state.messages = getMessages(); update(); }
+  function scheduleRefresh() {
+    if (refreshTimer !== null) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => { refreshTimer = null; refresh(); }, 120);
+  }
   function jumpTo(number) {
     state.messages = getMessages();
     const requested = Number(number);
@@ -209,9 +205,9 @@
       refreshQueued = true;
       requestAnimationFrame(() => { update(); refreshQueued = false; });
     }, { passive: true });
-    new MutationObserver(() => refresh()).observe(chat, { childList: true, subtree: true });
+    new MutationObserver(scheduleRefresh).observe(chat, { childList: true, subtree: true });
   }
-  window.addEventListener('resize', refresh);
+  window.addEventListener('resize', scheduleRefresh);
   refresh();
   setTimeout(refresh, 500);
   setTimeout(refresh, 1500);
