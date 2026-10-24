@@ -15,6 +15,7 @@
 #tavern-floor-floater .tff-dragging { cursor: grabbing; }
 #tavern-floor-floater .tff-grip { opacity: .6; font-size: 16px; }
 #tavern-floor-floater .tff-title { font-weight: 700; flex: 1; }
+#tavern-floor-floater .tff-version { flex: 0 0 auto; font-size: 9px; line-height: 1.5; opacity: .7; padding: 1px 4px; border: 1px solid var(--SmartThemeBorderColor, rgba(128,128,128,.4)); border-radius: 4px; white-space: nowrap; }
 #tavern-floor-floater .tff-count { opacity: .8; font-variant-numeric: tabular-nums; }
 #tavern-floor-floater button, #tavern-floor-floater input {
   font: inherit; color: inherit; background: rgba(128,128,128,.10);
