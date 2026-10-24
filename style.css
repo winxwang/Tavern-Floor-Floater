@@ -1,0 +1,50 @@
+#tavern-floor-floater {
+  position: fixed; z-index: 99999; top: 24%; right: 14px; width: 272px;
+  max-height: min(72vh, 620px); display: flex; flex-direction: column; overflow: hidden;
+  color: var(--SmartThemeBodyColor, #eee);
+  background: var(--SmartThemeBlurTintColor, rgba(28,28,30,.95));
+  border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,.22));
+  border-radius: 11px; box-shadow: 0 8px 26px rgba(0,0,0,.34);
+  font: 12px/1.35 system-ui, sans-serif; backdrop-filter: blur(12px);
+}
+#tavern-floor-floater * { box-sizing: border-box; }
+#tavern-floor-floater .tff-head {
+  display: flex; align-items: center; gap: 7px; flex: 0 0 auto; padding: 8px 9px;
+  cursor: grab; user-select: none; border-bottom: 1px solid rgba(128,128,128,.25);
+}
+#tavern-floor-floater .tff-dragging { cursor: grabbing; }
+#tavern-floor-floater .tff-grip { opacity: .6; font-size: 16px; }
+#tavern-floor-floater .tff-title { font-weight: 700; flex: 1; }
+#tavern-floor-floater .tff-count { opacity: .8; font-variant-numeric: tabular-nums; }
+#tavern-floor-floater button, #tavern-floor-floater input {
+  font: inherit; color: inherit; background: rgba(128,128,128,.10);
+  border: 1px solid var(--SmartThemeBorderColor, rgba(128,128,128,.4)); border-radius: 6px;
+  min-height: 27px;
+}
+#tavern-floor-floater button { padding: 3px 7px; cursor: pointer; }
+#tavern-floor-floater button:disabled { opacity: .35; cursor: default; }
+#tavern-floor-floater input { min-width: 0; padding: 4px 6px; }
+#tavern-floor-floater .tff-icon { width: 29px; padding: 2px; font-size: 14px; }
+#tavern-floor-floater .tff-min { min-height: 24px; }
+#tavern-floor-floater .tff-body { min-height: 0; padding: 8px; display: flex; flex-direction: column; gap: 7px; }
+#tavern-floor-floater .tff-search-row { display: flex; gap: 5px; }
+#tavern-floor-floater .tff-search { flex: 1; width: 100%; }
+#tavern-floor-floater .tff-filter-row { display: flex; gap: 5px; }
+#tavern-floor-floater .tff-filter { flex: 1; opacity: .78; }
+#tavern-floor-floater .tff-filter.is-active { opacity: 1; border-color: var(--SmartThemeQuoteColor, #8aab76); background: rgba(128,160,110,.2); }
+#tavern-floor-floater .tff-row { display: flex; gap: 5px; align-items: center; }
+#tavern-floor-floater .tff-number { width: 61px; text-align: center; }
+#tavern-floor-floater .tff-go { flex: 1; }
+#tavern-floor-floater .tff-secondary button { flex: 1; }
+#tavern-floor-floater .tff-results { overflow: auto; min-height: 0; max-height: 245px; display: flex; flex-direction: column; gap: 3px; }
+#tavern-floor-floater .tff-result { display: flex; gap: 6px; align-items: center; text-align: left; width: 100%; padding: 5px; min-height: 29px; }
+#tavern-floor-floater .tff-result.is-current { border-color: var(--SmartThemeQuoteColor, #8aab76); background: rgba(128,160,110,.17); }
+#tavern-floor-floater .tff-role { flex: 0 0 23px; width: 23px; text-align: center; border-radius: 4px; padding: 2px 0; font-size: 10px; font-weight: 700; background: rgba(128,128,128,.2); }
+#tavern-floor-floater .tff-role-user { background: rgba(90,145,210,.24); }
+#tavern-floor-floater .tff-role-assistant { background: rgba(120,165,95,.22); }
+#tavern-floor-floater .tff-role-system { background: rgba(190,155,80,.22); }
+#tavern-floor-floater .tff-result-floor { flex: 0 0 30px; width: 30px; text-align: right; font-variant-numeric: tabular-nums; opacity: .85; }
+#tavern-floor-floater .tff-snippet { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; opacity: .9; }
+#tavern-floor-floater .tff-empty, #tavern-floor-floater .tff-more, #tavern-floor-floater .tff-hint { opacity: .65; font-size: 10px; padding: 3px 1px; }
+#tavern-floor-floater.tff-minimized { width: 174px; max-height: none; }
+#tavern-floor-floater.tff-minimized .tff-body { display: none; }
