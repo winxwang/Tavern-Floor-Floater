@@ -2,7 +2,7 @@
   'use strict';
   const ID = 'tavern-floor-floater';
   if (document.getElementById(ID)) return;
-  const state = { messages: [], current: 0, minimized: false, dragging: false, filter: 'all' };
+  const state = { messages: [], current: null, minimized: false, dragging: false, filter: 'all' };
   const positionKey = 'tavern-floor-floater-position-v1';
   let refreshQueued = false;
   let saved = {};
@@ -12,13 +12,13 @@
   panel.id = ID;
   panel.setAttribute('aria-label', '酒馆楼层导航悬浮窗');
   panel.innerHTML = [
-    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层</span><span class="tff-count">0/0</span><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
+    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-count">—/0</span><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
-    '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索楼层 / 内容…" aria-label="搜索楼层或消息内容"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
-    '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部</button><button class="tff-filter" data-filter="user" type="button">用户</button><button class="tff-filter" data-filter="assistant" type="button">AI</button></div>',
-    '<div class="tff-row"><button class="tff-icon tff-prev" type="button" title="上一条">↑</button><input class="tff-number" type="number" min="1" step="1" value="1" aria-label="楼层编号"><button class="tff-go" type="button">跳转</button><button class="tff-icon tff-next" type="button" title="下一条">↓</button></div>',
-    '<div class="tff-row tff-secondary"><button class="tff-first" type="button">首楼</button><button class="tff-latest" type="button">最新回复 ↓</button></div>',
-    '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">楼层序号沿用聊天页面当前消息顺序</div></div>'
+    '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层号 / 内容…" aria-label="搜索楼层或消息内容"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
+    '<div class="tff-filter-row" role="group" aria-label="选择文本预览类型"><button class="tff-filter is-active" data-filter="all" type="button">全部预览</button><button class="tff-filter" data-filter="user" type="button">用户文本</button><button class="tff-filter" data-filter="assistant" type="button">AI文本</button></div>',
+    '<div class="tff-row"><button class="tff-icon tff-prev" type="button" title="上一条系统消息">↑</button><input class="tff-number" type="number" step="1" value="0" aria-label="酒馆系统楼层编号"><button class="tff-go" type="button">跳转</button><button class="tff-icon tff-next" type="button" title="下一条系统消息">↓</button></div>',
+    '<div class="tff-row tff-secondary"><button class="tff-first" type="button">最早消息</button><button class="tff-latest" type="button">最新 AI 回复 ↓</button></div>',
+    '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">编号读取消息元素的 mesid 系统编号；点击后定位到消息首行</div></div>'
   ].join('');
   document.body.appendChild(panel);
   if (Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
@@ -31,7 +31,18 @@
 
   function getMessages() {
     return Array.from(document.querySelectorAll('#chat .mes'))
-      .filter(el => el.isConnected && el.getClientRects().length > 0);
+      .filter(el => el.isConnected && el.getClientRects().length > 0)
+      .map((el, index) => {
+        const rawId = el.getAttribute('mesid') ?? el.dataset.mesid;
+        const parsedId = rawId !== null && rawId !== '' ? Number(rawId) : NaN;
+        return {
+          el,
+          floor: Number.isFinite(parsedId) ? parsedId : index,
+          role: roleOf(el),
+          text: textOf(el)
+        };
+      })
+      .sort((a, b) => a.floor - b.floor);
   }
   function roleOf(el) {
     const role = (el.getAttribute('data-is_user') || '').toLowerCase();
@@ -51,22 +62,21 @@
   function roleLabel(role) { return role === 'user' ? '用户' : role === 'system' ? '系统' : 'AI'; }
   function roleIcon(role) { return role === 'user' ? '我' : role === 'system' ? '系' : 'AI'; }
   function currentVisibleFloor() {
-    const idx = state.messages.findIndex(el => {
+    const item = state.messages.find(({ el }) => {
       const r = el.getBoundingClientRect();
       return r.bottom > 20 && r.top < window.innerHeight - 20;
     });
-    return idx >= 0 ? idx + 1 : state.current;
+    return item ? item.floor : state.current;
   }
   function filteredMessages() {
     const query = search.value.trim().toLocaleLowerCase();
-    return state.messages.map((el, i) => ({ el, floor: i + 1, role: roleOf(el), text: textOf(el) }))
-      .filter(item => {
-        if (state.filter !== 'all' && item.role !== state.filter) return false;
-        if (!query) return true;
-        return String(item.floor).includes(query) ||
-          roleLabel(item.role).toLocaleLowerCase().includes(query) ||
-          item.text.toLocaleLowerCase().includes(query);
-      });
+    return state.messages.filter(item => {
+      if (state.filter !== 'all' && item.role !== state.filter) return false;
+      if (!query) return true;
+      return String(item.floor).includes(query) ||
+        roleLabel(item.role).toLocaleLowerCase().includes(query) ||
+        item.text.toLocaleLowerCase().includes(query);
+    });
   }
   function renderResults() {
     const matches = filteredMessages();
@@ -74,16 +84,16 @@
     if (!matches.length) {
       const empty = document.createElement('div');
       empty.className = 'tff-empty';
-      empty.textContent = state.messages.length ? '没有匹配的楼层' : '尚未检测到聊天消息';
+      empty.textContent = state.messages.length ? '没有匹配的消息' : '尚未检测到聊天消息';
       results.appendChild(empty);
       return;
     }
     const fragment = document.createDocumentFragment();
-    for (const item of matches.slice(0, 30)) {
+    for (const item of matches) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'tff-result' + (item.floor === state.current ? ' is-current' : '');
-      button.title = '跳转到第 ' + item.floor + ' 条消息';
+      button.title = '跳转到酒馆系统编号 ' + item.floor;
       const role = document.createElement('span');
       role.className = 'tff-role tff-role-' + item.role; role.textContent = roleIcon(item.role);
       const floor = document.createElement('span');
@@ -95,52 +105,58 @@
       fragment.appendChild(button);
     }
     results.appendChild(fragment);
-    if (matches.length > 30) {
-      const more = document.createElement('div');
-      more.className = 'tff-more';
-      more.textContent = '共 ' + matches.length + ' 条匹配，当前显示前 30 条；可输入楼层号精确定位';
-      results.appendChild(more);
-    }
   }
   function update() {
     const total = state.messages.length;
-    state.current = total ? Math.min(Math.max(currentVisibleFloor(), 1), total) : 0;
-    count.textContent = (state.current || 0) + '/' + total;
-    input.max = String(Math.max(total, 1)); input.value = String(state.current || 1);
-    $('.tff-prev').disabled = total < 1 || state.current <= 1;
-    $('.tff-next').disabled = total < 1 || state.current >= total;
-    $('.tff-first').disabled = total < 1 || state.current <= 1;
-    $('.tff-latest').disabled = total < 1; $('.tff-go').disabled = total < 1;
+    state.current = total ? (currentVisibleFloor() ?? state.messages[0].floor) : null;
+    const currentIndex = state.messages.findIndex(item => item.floor === state.current);
+    count.textContent = (state.current === null ? '—' : state.current) + '/' + total;
+    input.min = String(total ? Math.min(...state.messages.map(item => item.floor)) : 0);
+    input.max = String(total ? Math.max(...state.messages.map(item => item.floor)) : 0);
+    if (document.activeElement !== input) input.value = String(state.current ?? '');
+    $('.tff-prev').disabled = currentIndex <= 0;
+    $('.tff-next').disabled = currentIndex < 0 || currentIndex >= total - 1;
+    $('.tff-first').disabled = currentIndex <= 0;
+    $('.tff-latest').disabled = total < 1;
+    $('.tff-go').disabled = total < 1;
     renderResults();
   }
   function refresh() { state.messages = getMessages(); update(); }
   function jumpTo(number) {
     state.messages = getMessages();
-    const total = state.messages.length;
-    if (!total) { update(); return; }
-    const floor = Math.min(Math.max(Math.trunc(Number(number) || 1), 1), total);
-    const target = state.messages[floor - 1];
-    if (!target) return;
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    state.current = floor; input.value = String(floor); count.textContent = floor + '/' + total;
+    const requested = Number(number);
+    if (!state.messages.length || !Number.isFinite(requested)) { update(); return; }
+    let target = state.messages.find(item => item.floor === Math.trunc(requested));
+    if (!target) {
+      target = state.messages.reduce((best, item) =>
+        Math.abs(item.floor - requested) < Math.abs(best.floor - requested) ? item : best, state.messages[0]);
+    }
+    target.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    state.current = target.floor;
+    input.value = String(target.floor);
+    count.textContent = target.floor + '/' + state.messages.length;
     renderResults();
+  }
+  function step(direction) {
+    state.messages = getMessages();
+    const index = state.messages.findIndex(item => item.floor === state.current);
+    const next = Math.max(0, Math.min(state.messages.length - 1, (index < 0 ? 0 : index) + direction));
+    if (state.messages[next]) jumpTo(state.messages[next].floor);
   }
   function latestReply() {
     state.messages = getMessages();
-    if (!state.messages.length) return;
-    let index = -1;
-    for (let i = state.messages.length - 1; i >= 0; i--) {
-      if (roleOf(state.messages[i]) === 'assistant') { index = i; break; }
-    }
-    if (index < 0) index = state.messages.length - 1;
-    jumpTo(index + 1);
+    const item = [...state.messages].reverse().find(message => message.role === 'assistant');
+    if (item) jumpTo(item.floor);
   }
 
   $('.tff-go').addEventListener('click', () => jumpTo(input.value));
   input.addEventListener('keydown', e => { if (e.key === 'Enter') jumpTo(input.value); });
-  $('.tff-prev').addEventListener('click', () => jumpTo(state.current - 1));
-  $('.tff-next').addEventListener('click', () => jumpTo(state.current + 1));
-  $('.tff-first').addEventListener('click', () => jumpTo(1));
+  $('.tff-prev').addEventListener('click', () => step(-1));
+  $('.tff-next').addEventListener('click', () => step(1));
+  $('.tff-first').addEventListener('click', () => {
+    state.messages = getMessages();
+    if (state.messages[0]) jumpTo(state.messages[0].floor);
+  });
   $('.tff-latest').addEventListener('click', latestReply);
   search.addEventListener('input', renderResults);
   $('.tff-clear').addEventListener('click', () => { search.value = ''; renderResults(); search.focus(); });
