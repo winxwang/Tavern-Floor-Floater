@@ -13,12 +13,12 @@
   panel.id = ID;
   panel.setAttribute('aria-label', '酒馆楼层导航悬浮窗');
   panel.innerHTML = [
-    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.2.3</span><span class="tff-count">—/0</span><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
+    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.2.4</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复">最新 AI 回复</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
     '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
     '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
     '<div class="tff-row"><button class="tff-icon tff-prev" type="button" title="上一条消息">↑</button><input class="tff-number" type="number" step="1" value="0" aria-label="酒馆系统楼层编号"><button class="tff-go" type="button">跳转</button><button class="tff-icon tff-next" type="button" title="下一条消息">↓</button></div>',
-    '<div class="tff-row tff-secondary"><button class="tff-first" type="button">最早消息</button><button class="tff-latest" type="button">跳转最新 AI ↓</button></div>',
+    '<div class="tff-row tff-secondary"><button class="tff-first" type="button">最早消息</button></div>',
     '<section class="tff-latest-preview"><div class="tff-preview-head"><span>最新 AI 回复</span><span class="tff-preview-floor">—</span></div><div class="tff-preview-text">尚未检测到 AI 回复</div></section>',
     '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">仅在新消息更新时提取最新 AI 回复的前 420 个字符；楼层列表不读取正文</div></div>'
   ].join('');
