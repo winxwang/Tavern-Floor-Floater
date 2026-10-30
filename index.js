@@ -13,13 +13,14 @@
   panel.id = ID;
   panel.setAttribute('aria-label', '酒馆楼层导航悬浮窗');
   panel.innerHTML = [
-    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.2.2</span><span class="tff-count">—/0</span><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
+    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.2.3</span><span class="tff-count">—/0</span><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
     '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
     '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
     '<div class="tff-row"><button class="tff-icon tff-prev" type="button" title="上一条消息">↑</button><input class="tff-number" type="number" step="1" value="0" aria-label="酒馆系统楼层编号"><button class="tff-go" type="button">跳转</button><button class="tff-icon tff-next" type="button" title="下一条消息">↓</button></div>',
-    '<div class="tff-row tff-secondary"><button class="tff-first" type="button">最早消息</button><button class="tff-latest" type="button">最新 AI 回复 ↓</button></div>',
-    '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">为避免长文本卡顿，列表仅显示系统编号和角色，不读取消息正文</div></div>'
+    '<div class="tff-row tff-secondary"><button class="tff-first" type="button">最早消息</button><button class="tff-latest" type="button">跳转最新 AI ↓</button></div>',
+    '<section class="tff-latest-preview"><div class="tff-preview-head"><span>最新 AI 回复</span><span class="tff-preview-floor">—</span></div><div class="tff-preview-text">尚未检测到 AI 回复</div></section>',
+    '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">仅在新消息更新时提取最新 AI 回复的前 420 个字符；楼层列表不读取正文</div></div>'
   ].join('');
   document.body.appendChild(panel);
   if (Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
@@ -29,6 +30,37 @@
 
   const $ = s => panel.querySelector(s);
   const input = $('.tff-number'), search = $('.tff-search'), count = $('.tff-count'), results = $('.tff-results');
+  const previewText = $('.tff-preview-text'), previewFloor = $('.tff-preview-floor');
+  let previewedLatestEl = null;
+
+  function readShortPreview(messageEl, limit = 420) {
+    const root = messageEl.querySelector('.mes_text') || messageEl;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let text = '', node;
+    while (text.length < limit && (node = walker.nextNode())) {
+      const part = (node.nodeValue || '').replace(/\\s+/g, ' ');
+      if (part) text += (text ? ' ' : '') + part.slice(0, limit - text.length);
+    }
+    text = text.trim();
+    return text.length >= limit ? text.slice(0, limit).trimEnd() + '…' : (text || '这条 AI 回复没有可显示的文本');
+  }
+
+  function renderLatestPreview() {
+    const latest = [...state.messages].reverse().find(message => message.role === 'assistant');
+    if (!latest) {
+      previewedLatestEl = null;
+      previewFloor.textContent = '—';
+      previewText.textContent = '尚未检测到 AI 回复';
+      return;
+    }
+    if (latest.el !== previewedLatestEl) {
+      previewedLatestEl = latest.el;
+      previewFloor.textContent = '楼层 ' + latest.floor;
+      previewText.textContent = readShortPreview(latest.el);
+      previewText.title = '点击跳转到最新 AI 回复';
+      previewText.onclick = () => jumpTo(latest.floor);
+    }
+  }
 
   function roleOf(el) {
     const role = (el.getAttribute('data-is_user') || '').toLowerCase();
@@ -113,7 +145,7 @@
     $('.tff-go').disabled = total < 1;
     renderResults();
   }
-  function refresh() { state.messages = getMessages(); update(); }
+  function refresh() { state.messages = getMessages(); update(); renderLatestPreview(); }
   function scheduleRefresh() {
     if (refreshTimer !== null) clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => { refreshTimer = null; refresh(); }, 120);
