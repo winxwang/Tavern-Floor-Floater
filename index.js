@@ -53,13 +53,12 @@
       previewText.textContent = '尚未检测到 AI 回复';
       return;
     }
-    if (latest.el !== previewedLatestEl) {
-      previewedLatestEl = latest.el;
-      previewFloor.textContent = '楼层 ' + latest.floor;
-      previewText.textContent = readShortPreview(latest.el);
-      previewText.title = '点击跳转到最新 AI 回复';
-      previewText.onclick = () => jumpTo(latest.floor);
-    }
+    previewedLatestEl = latest.el;
+    previewFloor.textContent = '楼层 ' + latest.floor;
+    // MutationObserver 会在 AI 流式输出时触发刷新；每次只读取前 420 个字符。
+    previewText.textContent = readShortPreview(latest.el);
+    previewText.title = '点击跳转到最新 AI 回复';
+    previewText.onclick = () => jumpTo(latest.floor);
   }
 
   function roleOf(el) {
