@@ -18,7 +18,6 @@
     '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
     '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
     '<div class="tff-row"><button class="tff-icon tff-prev" type="button" title="上一条消息">↑</button><input class="tff-number" type="number" step="1" value="0" aria-label="酒馆系统楼层编号"><button class="tff-go" type="button">跳转</button><button class="tff-icon tff-next" type="button" title="下一条消息">↓</button></div>',
-    '<div class="tff-row tff-secondary"><button class="tff-first" type="button">最早消息</button></div>',
     '<section class="tff-latest-preview"><div class="tff-preview-head"><span>最新 AI 回复</span><span class="tff-preview-floor">—</span></div><div class="tff-preview-text">尚未检测到 AI 回复</div></section>',
     '<div class="tff-results" aria-live="polite"></div><div class="tff-hint">仅在新消息更新时提取最新 AI 回复的前 420 个字符；楼层列表不读取正文</div></div>'
   ].join('');
@@ -139,7 +138,6 @@
     if (document.activeElement !== input) input.value = String(state.current ?? '');
     $('.tff-prev').disabled = currentIndex <= 0;
     $('.tff-next').disabled = currentIndex < 0 || currentIndex >= total - 1;
-    $('.tff-first').disabled = currentIndex <= 0;
     $('.tff-latest').disabled = !state.messages.some(item => item.role === 'assistant');
     $('.tff-end').disabled = total < 1;
     $('.tff-go').disabled = total < 1;
@@ -186,10 +184,6 @@
   input.addEventListener('keydown', e => { if (e.key === 'Enter') jumpTo(input.value); });
   $('.tff-prev').addEventListener('click', () => step(-1));
   $('.tff-next').addEventListener('click', () => step(1));
-  $('.tff-first').addEventListener('click', () => {
-    state.messages = getMessages();
-    if (state.messages[0]) jumpTo(state.messages[0].floor);
-  });
   $('.tff-latest').addEventListener('click', latestReply);
   $('.tff-end').addEventListener('click', jumpToChatEnd);
   search.addEventListener('input', renderResults);
