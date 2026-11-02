@@ -13,7 +13,7 @@
   panel.id = ID;
   panel.setAttribute('aria-label', '酒馆楼层导航悬浮窗');
   panel.innerHTML = [
-    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.2.4</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复">最新 AI 回复</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
+    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.2.5</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复">最新 AI 回复</button><button class="tff-end tff-head-end" type="button" title="自动跳转到聊天最后一条消息">聊天末尾</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
     '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
     '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
@@ -140,7 +140,8 @@
     $('.tff-prev').disabled = currentIndex <= 0;
     $('.tff-next').disabled = currentIndex < 0 || currentIndex >= total - 1;
     $('.tff-first').disabled = currentIndex <= 0;
-    $('.tff-latest').disabled = total < 1;
+    $('.tff-latest').disabled = !state.messages.some(item => item.role === 'assistant');
+    $('.tff-end').disabled = total < 1;
     $('.tff-go').disabled = total < 1;
     renderResults();
   }
@@ -170,6 +171,11 @@
     const next = Math.max(0, Math.min(state.messages.length - 1, (index < 0 ? 0 : index) + direction));
     if (state.messages[next]) jumpTo(state.messages[next].floor);
   }
+  function jumpToChatEnd() {
+    state.messages = getMessages();
+    const last = state.messages[state.messages.length - 1];
+    if (last) jumpTo(last.floor);
+  }
   function latestReply() {
     state.messages = getMessages();
     const item = [...state.messages].reverse().find(message => message.role === 'assistant');
@@ -185,6 +191,7 @@
     if (state.messages[0]) jumpTo(state.messages[0].floor);
   });
   $('.tff-latest').addEventListener('click', latestReply);
+  $('.tff-end').addEventListener('click', jumpToChatEnd);
   search.addEventListener('input', renderResults);
   $('.tff-clear').addEventListener('click', () => { search.value = ''; renderResults(); search.focus(); });
   panel.querySelectorAll('.tff-filter').forEach(button => {
