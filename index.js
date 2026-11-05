@@ -13,7 +13,7 @@
   panel.id = ID;
   panel.setAttribute('aria-label', '酒馆楼层导航悬浮窗');
   panel.innerHTML = [
-    '<div class="tff-head" title="拖动悬浮窗；双击空白处展开/收起"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.4.1</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复" aria-label="最新 AI 回复">✦</button><button class="tff-end tff-head-end" type="button" title="跳转到聊天最后一条消息" aria-label="聊天末尾">⇣</button><button class="tff-close" type="button" title="关闭悬浮窗；可从发送框按钮重新打开" aria-label="关闭悬浮窗">×</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
+    '<div class="tff-head" title="拖动悬浮窗；双击空白处展开/收起"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.5.0</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复" aria-label="最新 AI 回复">✦</button><button class="tff-end tff-head-end" type="button" title="跳转到聊天最后一条消息" aria-label="聊天末尾">⇣</button><button class="tff-close" type="button" title="关闭悬浮窗；可从扩展菜单重新打开" aria-label="关闭悬浮窗">×</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
     '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
     '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
@@ -23,20 +23,6 @@
   ].join('');
   document.body.appendChild(panel);
 
-  // 将启动按钮挂到发送框扩展按钮区；若酒馆稍后才创建发送框，则由观察器补挂。
-  const launcher = document.createElement('div');
-  launcher.id = 'tff-sendbox-launcher';
-  launcher.className = 'menu_button tff-sendbox-launcher';
-  launcher.setAttribute('role', 'button');
-  launcher.setAttribute('tabindex', '0');
-  launcher.setAttribute('aria-label', '打开楼层导航');
-  launcher.textContent = '⌖';
-  function mountLauncher() {
-    if (document.getElementById(launcher.id)) return;
-    const host = document.querySelector('#send_form .extensions, #send_form .extension_buttons, #send_form .send_form_buttons, #send_form');
-    if (!host) return;
-    host.appendChild(launcher);
-  }
   function openPanel() {
     state.closed = false;
     panel.hidden = false;
@@ -44,13 +30,35 @@
     panel.style.display = '';
     refresh();
   }
-  launcher.addEventListener('click', openPanel);
-  launcher.addEventListener('keydown', event => {
+
+  // 将入口放入酒馆左侧扩展菜单；若存在「柚月の记忆」，则紧跟其后。
+  const menuItem = document.createElement('div');
+  menuItem.id = 'tff-extension-menu-item';
+  menuItem.className = 'list-group-item';
+  menuItem.setAttribute('role', 'button');
+  menuItem.setAttribute('tabindex', '0');
+  menuItem.setAttribute('aria-label', '打开楼层导航');
+  menuItem.innerHTML = '<div class="fa-solid fa-list-ol extensionsMenuExtensionButton" aria-hidden="true"></div><span>楼层导航</span>';
+  menuItem.addEventListener('click', openPanel);
+  menuItem.addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPanel(); }
   });
-  const launcherObserver = new MutationObserver(mountLauncher);
-  launcherObserver.observe(document.body, { childList: true, subtree: true });
-  mountLauncher();
+
+  function mountMenuItem() {
+    const menu = document.querySelector('#extensionsMenu');
+    if (!menu) return;
+    const yuzukiItem = Array.from(menu.children).find(el => (el.textContent || '').includes('柚月の记忆'));
+    if (yuzukiItem) {
+      if (menuItem.parentElement !== menu || menuItem.previousElementSibling !== yuzukiItem) {
+        menu.insertBefore(menuItem, yuzukiItem.nextSibling);
+      }
+    } else if (menuItem.parentElement !== menu) {
+      menu.appendChild(menuItem);
+    }
+  }
+  const menuObserver = new MutationObserver(mountMenuItem);
+  menuObserver.observe(document.body, { childList: true, subtree: true });
+  mountMenuItem();
   if (Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
     panel.style.left = saved.left + 'px'; panel.style.top = saved.top + 'px';
     panel.style.right = 'auto'; panel.style.bottom = 'auto';
@@ -277,7 +285,7 @@
     new MutationObserver(scheduleRefresh).observe(chat, { childList: true, subtree: true });
   }
   window.addEventListener('resize', scheduleRefresh);
-  window.addEventListener('pagehide', () => launcherObserver.disconnect(), { once: true });
+  window.addEventListener('pagehide', () => menuObserver.disconnect(), { once: true });
   refresh();
   setTimeout(refresh, 500);
   setTimeout(refresh, 1500);
