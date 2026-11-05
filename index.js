@@ -27,7 +27,6 @@
   const launcher = document.createElement('div');
   launcher.id = 'tff-sendbox-launcher';
   launcher.className = 'menu_button tff-sendbox-launcher';
-  launcher.title = '打开楼层导航';
   launcher.setAttribute('role', 'button');
   launcher.setAttribute('tabindex', '0');
   launcher.setAttribute('aria-label', '打开楼层导航');
@@ -86,7 +85,6 @@
     previewFloor.textContent = '楼层 ' + latest.floor;
     // MutationObserver 会在 AI 流式输出时触发刷新；每次只读取前 420 个字符。
     previewText.textContent = readShortPreview(latest.el);
-    previewText.title = '点击跳转到最新 AI 回复';
     previewText.onclick = () => jumpTo(latest.floor);
   }
 
@@ -269,6 +267,8 @@
   head.addEventListener('pointerup', stopDrag);
   head.addEventListener('pointercancel', stopDrag);
 
+  // Remove hover-only explanatory tooltips; keep accessible aria-labels and visible controls.
+  panel.querySelectorAll('[title]').forEach(el => el.removeAttribute('title'));
   const chat = document.querySelector('#chat');
   if (chat) {
     chat.addEventListener('scroll', () => {
