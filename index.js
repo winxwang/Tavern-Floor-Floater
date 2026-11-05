@@ -13,7 +13,7 @@
   panel.id = ID;
   panel.setAttribute('aria-label', '酒馆楼层导航悬浮窗');
   panel.innerHTML = [
-    '<div class="tff-head" title="按住此处拖动"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.2.5</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复">最新 AI 回复</button><button class="tff-end tff-head-end" type="button" title="自动跳转到聊天最后一条消息">聊天末尾</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
+    '<div class="tff-head" title="拖动悬浮窗；双击空白处展开/收起"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.3.0</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复" aria-label="最新 AI 回复">✦</button><button class="tff-end tff-head-end" type="button" title="跳转到聊天最后一条消息" aria-label="聊天末尾">⇣</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
     '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
     '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
@@ -195,12 +195,17 @@
       renderResults();
     });
   });
-  $('.tff-min').addEventListener('click', () => {
-    state.minimized = !state.minimized;
+  function setMinimized(value) {
+    state.minimized = Boolean(value);
     panel.classList.toggle('tff-minimized', state.minimized);
-    $('.tff-min').textContent = state.minimized ? '+' : '−';
+    $('.tff-min').textContent = state.minimized ? '＋' : '−';
     $('.tff-min').title = state.minimized ? '展开' : '折叠';
     $('.tff-min').setAttribute('aria-label', state.minimized ? '展开' : '折叠');
+  }
+  $('.tff-min').addEventListener('click', () => setMinimized(!state.minimized));
+  panel.addEventListener('dblclick', event => {
+    if (event.target.closest('button')) return;
+    setMinimized(!state.minimized);
   });
 
   const head = $('.tff-head');
