@@ -150,3 +150,54 @@
   font-size: 21px;
 }
 #tavern-floor-floater.tff-minimized .tff-body { display: none; }
+
+
+/* v1.4.0 — send-form launcher and explicit close/reopen */
+#tavern-floor-floater .tff-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 9px;
+  color: #f2a6a6;
+  font-size: 21px;
+  line-height: 1;
+  background: rgba(190, 75, 75, .13);
+  border-color: rgba(225, 125, 125, .28);
+}
+#tavern-floor-floater .tff-close:hover {
+  background: rgba(210, 75, 75, .25);
+  border-color: rgba(240, 135, 135, .48);
+}
+#tavern-floor-floater.tff-minimized { width: 132px; }
+#tavern-floor-floater.tff-minimized .tff-head {
+  gap: 6px;
+  padding: 7px;
+}
+#tavern-floor-floater.tff-minimized .tff-close {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 34px;
+  min-height: 34px;
+  font-size: 21px;
+}
+#tavern-floor-floater[hidden],
+#tavern-floor-floater.tff-closed { display: none !important; }
+#tff-sendbox-launcher {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2em;
+  min-height: 2.2em;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+  font-size: 1.15em;
+}
+#tff-sendbox-launcher:hover {
+  background: var(--SmartThemeBlurTintColor, rgba(128,128,128,.2));
+}
