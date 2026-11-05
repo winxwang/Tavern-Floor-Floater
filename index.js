@@ -140,7 +140,6 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'tff-result' + (item.floor === state.current ? ' is-current' : '');
-      button.title = '跳转到酒馆系统编号 ' + item.floor;
       const role = document.createElement('span');
       role.className = 'tff-role tff-role-' + item.role;
       role.textContent = roleIcon(item.role);
@@ -228,7 +227,6 @@
     state.minimized = Boolean(value);
     panel.classList.toggle('tff-minimized', state.minimized);
     $('.tff-min').textContent = state.minimized ? '＋' : '−';
-    $('.tff-min').title = state.minimized ? '展开' : '折叠';
     $('.tff-min').setAttribute('aria-label', state.minimized ? '展开' : '折叠');
   }
   $('.tff-min').addEventListener('click', () => setMinimized(!state.minimized));
