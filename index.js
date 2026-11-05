@@ -204,8 +204,11 @@
   }
   $('.tff-min').addEventListener('click', () => setMinimized(!state.minimized));
   panel.addEventListener('dblclick', event => {
-    if (event.target.closest('button')) return;
-    setMinimized(!state.minimized);
+    if (state.minimized) {
+      setMinimized(false);
+      return;
+    }
+    if (!event.target.closest('button')) setMinimized(true);
   });
 
   const head = $('.tff-head');
