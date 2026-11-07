@@ -13,7 +13,7 @@
   panel.id = ID;
   panel.setAttribute('aria-label', '酒馆楼层导航悬浮窗');
   panel.innerHTML = [
-    '<div class="tff-head" title="拖动悬浮窗；双击空白处展开/收起"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.5.1</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复" aria-label="最新 AI 回复">✦</button><button class="tff-end tff-head-end" type="button" title="跳转到最新 AI 回复末尾" aria-label="最新 AI 回复末尾">⇣</button><button class="tff-close" type="button" title="关闭悬浮窗；可从扩展菜单重新打开" aria-label="关闭悬浮窗">×</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
+    '<div class="tff-head" title="拖动悬浮窗；双击空白处展开/收起"><span class="tff-grip" aria-hidden="true">⠿</span><span class="tff-title">楼层导航</span><span class="tff-version">v1.5.2</span><span class="tff-count">—/0</span><button class="tff-latest tff-head-latest" type="button" title="跳转到最新 AI 回复" aria-label="最新 AI 回复">✦</button><button class="tff-end tff-head-end" type="button" title="跳转到最新 AI 回复末尾" aria-label="最新 AI 回复末尾">⇣</button><button class="tff-close" type="button" title="关闭悬浮窗；可从扩展菜单重新打开" aria-label="关闭悬浮窗">×</button><button class="tff-icon tff-min" type="button" title="折叠" aria-label="折叠">−</button></div>',
     '<div class="tff-body">',
     '<div class="tff-search-row"><input class="tff-search" type="search" placeholder="搜索系统楼层编号…" aria-label="搜索系统楼层编号"><button class="tff-icon tff-clear" type="button" title="清空搜索" aria-label="清空搜索">×</button></div>',
     '<div class="tff-filter-row" role="group" aria-label="消息类型筛选"><button class="tff-filter is-active" data-filter="all" type="button">全部消息</button><button class="tff-filter" data-filter="user" type="button">用户消息</button><button class="tff-filter" data-filter="assistant" type="button">AI 消息</button></div>',
@@ -63,6 +63,29 @@
     panel.style.left = saved.left + 'px'; panel.style.top = saved.top + 'px';
     panel.style.right = 'auto'; panel.style.bottom = 'auto';
   }
+
+  // 跨分辨率/窗口尺寸恢复时，将面板完整约束在当前可视区域内。
+  function clampPanelIntoViewport(persist = false) {
+    if (!panel.isConnected || panel.hidden || panel.classList.contains('tff-closed')) return;
+    const rect = panel.getBoundingClientRect();
+    const margin = 8;
+    const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+    const maxTop = Math.max(margin, window.innerHeight - Math.min(rect.height, window.innerHeight - margin * 2) - margin);
+    const left = Math.min(maxLeft, Math.max(margin, rect.left));
+    const top = Math.min(maxTop, Math.max(margin, rect.top));
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    if (persist) {
+      try { localStorage.setItem(positionKey, JSON.stringify({ left, top })); } catch {}
+    }
+  }
+  function scheduleViewportClamp(persist = true) {
+    requestAnimationFrame(() => clampPanelIntoViewport(persist));
+  }
+  // 等样式和初始布局完成后再校正历史坐标，避免旧分辨率坐标把面板留在屏幕外。
+  scheduleViewportClamp(true);
 
   const $ = s => panel.querySelector(s);
   const input = $('.tff-number'), search = $('.tff-search'), count = $('.tff-count'), results = $('.tff-results');
@@ -267,15 +290,17 @@
   });
   head.addEventListener('pointermove', e => {
     if (!state.dragging) return;
-    const x = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, e.clientX - Number(panel.dataset.dragX)));
-    const y = Math.max(0, Math.min(window.innerHeight - 36, e.clientY - Number(panel.dataset.dragY)));
+    const margin = 8;
+    const maxX = Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
+    const maxY = Math.max(margin, window.innerHeight - head.offsetHeight - margin);
+    const x = Math.max(margin, Math.min(maxX, e.clientX - Number(panel.dataset.dragX)));
+    const y = Math.max(margin, Math.min(maxY, e.clientY - Number(panel.dataset.dragY)));
     panel.style.left = x + 'px'; panel.style.top = y + 'px';
   });
   function stopDrag() {
     if (!state.dragging) return;
     state.dragging = false; head.classList.remove('tff-dragging');
-    const r = panel.getBoundingClientRect();
-    try { localStorage.setItem(positionKey, JSON.stringify({ left: r.left, top: r.top })); } catch {}
+    clampPanelIntoViewport(true);
   }
   head.addEventListener('pointerup', stopDrag);
   head.addEventListener('pointercancel', stopDrag);
@@ -291,7 +316,8 @@
     }, { passive: true });
     new MutationObserver(scheduleRefresh).observe(chat, { childList: true, subtree: true });
   }
-  window.addEventListener('resize', scheduleRefresh);
+  window.addEventListener('resize', () => { scheduleRefresh(); scheduleViewportClamp(true); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', () => scheduleViewportClamp(true));
   window.addEventListener('pagehide', () => menuObserver.disconnect(), { once: true });
   refresh();
   setTimeout(refresh, 500);
