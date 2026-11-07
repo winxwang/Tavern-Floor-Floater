@@ -28,6 +28,7 @@
     panel.hidden = false;
     panel.classList.remove('tff-closed');
     panel.style.display = '';
+    scheduleViewportClamp(true);
     refresh();
   }
 
