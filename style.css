@@ -1,5 +1,5 @@
 #tavern-floor-floater {
-  position: fixed; z-index: 99999; top: 24%; right: 14px; width: 272px;
+  position: fixed; z-index: 99999; top: 24%; right: 14px; width: 272px; max-width: calc(100vw - 16px);
   max-height: min(72vh, 620px); display: flex; flex-direction: column; overflow: hidden;
   color: var(--SmartThemeBodyColor, #eee);
   background: var(--SmartThemeBlurTintColor, rgba(28,28,30,.95));
@@ -201,3 +201,8 @@
 #tff-sendbox-launcher:hover {
   background: var(--SmartThemeBlurTintColor, rgba(128,128,128,.2));
 }
+
+
+/* v1.5.2 — keep the floater reachable on smaller viewports */
+#tavern-floor-floater { max-width: calc(100vw - 16px); }
+#tavern-floor-floater.tff-minimized { max-width: calc(100vw - 16px); }
